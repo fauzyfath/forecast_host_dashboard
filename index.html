@@ -4,10 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Curah Hujan, Kecepatan Angin, dan Cahaya Cuaca</title>
+    <link
+      rel="stylesheet"
+      href="	https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
-    <canvas id="weatherChart" width="800" height="400"></canvas>
+    <div class="row">
+      <div class="col-lg-6 mt-4">
+        <canvas id="weatherChart" width="800" height="400"></canvas>
+      </div>
+      <div class="col-lg-6 mt-4">
+        <canvas id="windChart" width="800" height="400"></canvas>
+      </div>
+      <div class="col-lg-6 mt-4">
+        <canvas id="lightChart" width="800" height="400"></canvas>
+      </div>
+      <div class="col-lg-6 mt-4">
+        <canvas id="distanceChart" width="800" height="400"></canvas>
+      </div>
+    </div>
+
     <script>
       async function fetchData() {
         const response = await fetch("http://localhost:3000/api/weather");
@@ -21,8 +39,15 @@
         const curahHujanHariIni = data.map((item) => item.curah_hujan_hari_ini);
         const kecepatan = data.map((item) => item.kecepatan_kilometer_per_jam);
         const cahayaCuaca = data.map((item) => item.lux_value);
+        const distance = data.map((item) => item.distance);
+        const rotasi = data.map((item) => item.rotasi_per_detik);
+        const kecepatanMeterPerDetik = data.map(
+          (item) => item.kecepatan_meter_per_detik
+        );
+        const weatherConditions = data.map((item) => item.cahaya_cuaca);
 
-        const chartData = {
+        // Data untuk grafik curah hujan
+        const weatherData = {
           labels: labels,
           datasets: [
             {
@@ -49,8 +74,37 @@
               fill: false,
               tension: 0.4,
             },
+          ],
+        };
+
+        // Konfigurasi untuk grafik cuaca
+        const weatherConfig = {
+          type: "line",
+          data: weatherData,
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: "top" },
+              title: { display: true, text: "Curah Hujan" },
+            },
+            scales: {
+              x: { title: { display: true, text: "Time" } },
+              y: { title: { display: true, text: "Curah Hujan (mm)" } },
+            },
+          },
+        };
+
+        var weatherChart = new Chart(
+          document.getElementById("weatherChart"),
+          weatherConfig
+        );
+
+        // Data untuk grafik kecepatan angin
+        const windData = {
+          labels: labels,
+          datasets: [
             {
-              label: "Kecepatan (km/h)",
+              label: "Kecepatan Angin (km/h)",
               backgroundColor: "rgba(255, 206, 86, 0.2)",
               borderColor: "rgba(255, 206, 86, 1)",
               data: kecepatan,
@@ -58,7 +112,52 @@
               tension: 0.4,
             },
             {
-              label: "Cahaya Cuaca",
+              label: "Kecepatan Angin (m/s)",
+              backgroundColor: "rgba(54, 162, 235, 0.2)",
+              borderColor: "rgba(54, 162, 235, 1)",
+              data: kecepatanMeterPerDetik,
+              fill: false,
+              tension: 0.4,
+            },
+            {
+              label: "Rotasi Angin (rotasi/detik)",
+              backgroundColor: "rgba(255, 99, 132, 0.2)",
+              borderColor: "rgba(255, 99, 132, 1)",
+              data: rotasi,
+              fill: false,
+              tension: 0.4,
+            },
+          ],
+        };
+
+        // Konfigurasi untuk grafik kecepatan angin
+        const windConfig = {
+          type: "line",
+          data: windData,
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: "top" },
+              title: { display: true, text: "Kecepatan Angin" },
+            },
+            scales: {
+              x: { title: { display: true, text: "Time" } },
+              y: { title: { display: true, text: "Kecepatan (km/h dan m/s)" } },
+            },
+          },
+        };
+
+        var windChart = new Chart(
+          document.getElementById("windChart"),
+          windConfig
+        );
+
+        // Data untuk grafik cahaya cuaca
+        const lightData = {
+          labels: labels,
+          datasets: [
+            {
+              label: "Cahaya Cuaca (Lux)",
               backgroundColor: "rgba(54, 162, 235, 0.2)",
               borderColor: "rgba(54, 162, 235, 1)",
               data: cahayaCuaca,
@@ -68,44 +167,93 @@
           ],
         };
 
-        const config = {
+        // Konfigurasi untuk grafik cahaya cuaca
+        const lightConfig = {
           type: "line",
-          data: chartData,
+          data: lightData,
           options: {
             responsive: true,
             plugins: {
-              legend: {
-                position: "top",
-              },
-              title: {
-                display: true,
-                text: "Curah Hujan, Kecepatan Angin, dan Cahaya Cuaca",
+              legend: { position: "top" },
+              title: { display: true, text: "Cahaya Cuaca" },
+              annotation: {
+                annotations: weatherConditions.map((condition, index) => ({
+                  type: "line",
+                  xMin: labels[index],
+                  xMax: labels[index],
+                  yMin: 0,
+                  yMax: Math.max(...cahayaCuaca) * 1.1, // Slightly above max Lux value
+                  borderColor: "red",
+                  borderWidth: 2,
+                  label: {
+                    enabled: true,
+                    content: condition,
+                    position: "top",
+                    color: "red", // Set color for the label
+                    font: {
+                      size: 12,
+                    },
+                  },
+                })),
               },
             },
             scales: {
+              x: { title: { display: true, text: "Time" } },
+              y: { title: { display: true, text: "Cahaya (Lux)" } },
+            },
+          },
+        };
+
+        var lightChart = new Chart(
+          document.getElementById("lightChart"),
+          lightConfig
+        );
+
+        // Data untuk grafik kedalaman air
+        const distanceData = {
+          labels: labels,
+          datasets: [
+            {
+              label: "Kedalaman Air (m)",
+              backgroundColor: "rgba(255, 99, 132, 0.2)",
+              borderColor: "rgba(255, 99, 132, 1)",
+              data: distance,
+              fill: false,
+              tension: 0.4,
+            },
+          ],
+        };
+
+        // Konfigurasi untuk grafik kedalaman air
+        const distanceConfig = {
+          type: "line",
+          data: distanceData,
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: "top" },
+              title: { display: true, text: "Kedalaman Air" },
+            },
+            scales: {
               x: {
-                title: {
-                  display: true,
-                  text: "Time",
-                },
+                title: { display: true, text: "Time" },
               },
               y: {
-                title: {
-                  display: true,
-                  text: "Values",
-                },
+                title: { display: true, text: "Kedalaman (m)" },
               },
             },
           },
         };
 
-        var weatherChart = new Chart(
-          document.getElementById("weatherChart"),
-          config
+        // Membuat grafik kedalaman air
+        var distanceChart = new Chart(
+          document.getElementById("distanceChart"),
+          distanceConfig
         );
       }
 
       fetchData();
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>
